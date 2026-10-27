@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Integración numérica · La Paz, Bolivia</title>
+<style>
+:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);--bg:#f5f7fa;--card:#fff;--tx:#1b2430;--mu:#5b6776;--ln:#dde3ea;--ac:#0f6fbf;--ac2:#e8f2fc;--ok:#18794e;--er:#b42318}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){color-scheme:dark;--bg:#0f141a;--card:#18202a;--tx:#e6ebf1;--mu:#98a4b3;--ln:#2a3542;--ac:#5aaeff;--ac2:#16293b;--ok:#4cc38a;--er:#ff8a80}}
+:root[data-theme="dark"]{color-scheme:dark;--bg:#0f141a;--card:#18202a;--tx:#e6ebf1;--mu:#98a4b3;--ln:#2a3542;--ac:#5aaeff;--ac2:#16293b;--ok:#4cc38a;--er:#ff8a80}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--tx);font:15px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:920px;margin:0 auto;padding:20px 14px 40px}
+h1{font-size:1.6rem;margin:0 0 4px}h2{font-size:1.05rem;margin:0 0 10px}
+.sub{color:var(--mu);margin:0 0 18px}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:12px;padding:16px;margin-bottom:14px}
+label{display:block;font-size:.8rem;color:var(--mu);margin:10px 0 4px;font-weight:600}
+input,select,textarea{width:100%;padding:9px 10px;border:1px solid var(--ln);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit}
+textarea{min-height:64px;resize:vertical;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:.9rem}
+.g{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(150px,1fr))}
+button{background:var(--ac);color:#fff;border:0;border-radius:8px;padding:10px 16px;font:inherit;font-weight:600;cursor:pointer}
+button.s{background:var(--ac2);color:var(--ac)}
+.row{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px}
+.sc{overflow-x:auto}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{padding:7px 9px;border-bottom:1px solid var(--ln);text-align:right;white-space:nowrap}
+th:first-child,td:first-child{text-align:left}th{color:var(--mu);font-weight:600}
+.err{background:color-mix(in srgb,var(--er) 12%,transparent);color:var(--er);padding:10px 12px;border-radius:8px;margin-top:12px}
+.sol{background:var(--ac2);border-radius:8px;padding:10px 12px;margin:12px 0 0;font-size:.9rem}
+.na{color:var(--mu);font-style:italic}.big{font-weight:700;color:var(--ac)}
+.hint{font-size:.78rem;color:var(--mu);margin:4px 0 0}
+svg{width:100%;height:auto;display:block}
+ul{margin:6px 0 0;padding-left:20px}
+</style>
+</head>
+<body>
+<main>
+<h1>Integración numérica · La Paz, Bolivia</h1>
+<p class="sub">Trapecio compuesto, Simpson 1/3 y Simpson 3/8 aplicados a problemas de transporte, ingeniería, agua, geometría y energía.</p>
+
+<section class="card">
+<h2>1. Elige un ejercicio o ingresa tus propios datos</h2>
+<label for="pre">Ejercicio</label>
+<select id="pre"></select>
+<p id="desc" class="hint"></p>
+<div class="row" style="margin-top:8px">
+<button class="s" id="mT" type="button">Datos de una tabla (x, y)</button>
+<button class="s" id="mF" type="button">Función f(x)</button>
+</div>
+<div id="tab">
+<label for="xs">Valores de x (separados por espacio, coma o punto y coma; decimales con punto)</label>
+<textarea id="xs"></textarea>
+<label for="ys">Valores de y (misma cantidad que x)</label>
+<textarea id="ys"></textarea>
+<label for="gy">Transformar y antes de integrar (opcional, usa la variable y)</label>
+<input id="gy" value="y">
+</div>
+<div id="fun" hidden>
+<label for="fx">f(x) — admite sin, cos, tan, sqrt, exp, log, abs, sinh, cosh, pi y potencias con ^</label>
+<input id="fx">
+<div class="g">
+<div><label for="a">Límite inferior a</label><input id="a"></div>
+<div><label for="b">Límite superior b</label><input id="b"></div>
+<div><label for="n">Subintervalos n</label><input id="n" type="number" min="1" step="1"></div>
+</div>
+</div>
+<div class="g">
+<div><label for="fac">Factor multiplicador (p. ej. 1/3600, pi)</label><input id="fac" value="1"></div>
+<div><label for="un">Unidad del resultado</label><input id="un"></div>
+<div><label for="ref">Valor de referencia (opcional)</label><input id="ref"></div>
+</div>
+<div class="row"><button id="go" type="button">Calcular</button><button class="s" id="tst" type="button">Prueba de validación: x² en [0, 2]</button></div>
+<div id="msg"></div>
+</section>
+
+<section class="card" id="out" hidden>
+<h2>2. Resultados</h2>
+<p id="par" class="hint"></p>
+<div class="sc"><table id="rt"></table></div>
+<div id="sol" class="sol" hidden></div>
+</section>
+
+<section class="card" id="out2" hidden>
+<h2>3. Tabla de nodos y factores de integración</h2>
+<label for="mw">Método</label><select id="mw"></select>
+<div class="sc"><table id="wt"></table></div>
+</section>
+
+<section class="card" id="out3" hidden>
+<h2>4. Gráfico del área bajo la curva</h2>
+<div id="ch"></div>
+</section>
+
+<section class="card">
+<h2>Relación con Ingeniería de Sistemas</h2>
+<p style="margin:0">Esta aplicación convierte un modelo matemático en software verificable. En la carrera se aplica en:</p>
+<ul>
+<li>Procesamiento de datos de sensores (velocidad, fuerza, caudal) que llegan como valores discretos.</li>
+<li>Validación de entradas y manejo de errores antes de ejecutar un algoritmo.</li>
+<li>Algoritmos de complejidad lineal O(n) con un solo recorrido de los datos.</li>
+<li>Pruebas con un caso de resultado conocido (x² en [0, 2] = 8/3) para verificar el código.</li>
+<li>Modelado y simulación para apoyar decisiones de ingeniería.</li>
+</ul>
+</section>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const M=Math,OK=['x','y','sin','cos','tan','sqrt','exp','log','abs','pi','cosh','sinh','pow','e'];
+function mk(s,v){const t=String(s).replace(/\^/g,'**').replace(/π/g,'pi');const bad=(t.match(/[A-Za-z_]+/g)||[]).find(i=>i!==v&&!OK.includes(i));
+ if(bad)throw Error('Símbolo no permitido en la expresión: '+bad);
+ const g=new Function(v,'sin','cos','tan','sqrt','exp','log','abs','pi','cosh','sinh','pow','e','return ('+t+');');
+ return x=>g(x,M.sin,M.cos,M.tan,M.sqrt,M.exp,M.log,M.abs,M.PI,M.cosh,M.sinh,M.pow,M.E)}
+const num=(s,l)=>{const v=mk(s,'x')(0);if(!isFinite(v))throw Error('Valor no numérico en '+l);return v};
+const fmt=v=>!isFinite(v)?'—':M.abs(v)>=1e6?v.toExponential(8):v.toFixed(6);
+const list=s=>s.split(/[\s,;]+/).filter(Boolean).map(v=>{const n=Number(v);if(isNaN(n))throw Error('Dato no numérico: “'+v+'”');return n});
+const P=[
+{k:'19',t:'Ejercicio 19 · Distancia de un vehículo',d:'d = ∫₀⁷ v(t) dt, con v en mi/h y t en s. Se divide entre 3600 para pasar a millas.',m:'T',x:'0 1 2 3 4 5 6 7',y:'0 14 39 69 95 114 129 139',f:'1/3600',u:'mi',s:'Solucionario: trapecio 0.147083 mi · Simpson combinado (1/3 + 3/8) 0.147072 mi ≈ 236.69 m'},
+{k:'20',t:'Ejercicio 20 · Trabajo de la banda elástica',d:'W = ∫₀²·⁸ F(x) dx, con x en in y F en lb.',m:'T',x:'0 0.4 0.8 1.2 1.6 2.0 2.4 2.8',y:'0 0.85 1.30 1.60 1.87 2.14 2.34 2.52',f:'1',u:'lb·in',s:'Solucionario: trapecio 4.544000 lb·in · Simpson combinado 4.577167 lb·in ≈ 0.517 J'},
+{k:'21',t:'Ejercicio 21 · Área de un perfil topográfico',d:'Área bajo el perfil entre x = 1 y x = 10 (datos ilustrativos digitalizados de la gráfica).',m:'T',x:'1 2 3 4 5 6 7 8 9 10',y:'1.3 3.7 4.6 4.4 2.7 2.5 3.6 5.3 6.0 5.9',f:'1',u:'u²',s:'Solucionario: trapecio ≈ 36.40 u² · Simpson 1/3 (8 intervalos) + trapecio en el noveno ≈ 36.85 u²'},
+{k:'22',t:'Ejercicio 22 · Longitud de la catenaria',d:'L = ∫ √(1+[y′]²) dx con y = 24·cosh(x/24), x de −12 a 26 ft.',m:'F',fx:'sqrt(1+sinh(x/24)^2)',a:'-12',b:'26',n:8,f:'1',u:'ft',r:'24*(sinh(26/24)-sinh(-12/24))',s:'Solucionario: trapecio 44.042044 ft · Simpson 1/3 43.899213 ft · exacto 43.898841 ft'},
+{k:'23',t:'Ejercicio 23 · Caudal de una tubería',d:'Q = ∫₀ᴿ 2π r v(r) dr con v(r) = 80(1 − r/R)^(1/7) y R = 0.25 in. Aquí x representa r.',m:'F',fx:'160*pi*x*(1-x/0.25)^(1/7)',a:'0',b:'0.25',n:8,f:'1',u:'in³/s',r:'49*pi/12',s:'Solucionario: trapecio 11.681778 · Simpson 1/3 12.151244 · exacto 12.828170 in³/s'},
+{k:'24',t:'Ejercicio 24 · Longitud de la cardioide',d:'L = ∫₀²π √(x′² + y′²) dt con b = 5. Aquí x representa t.',m:'F',fx:'sqrt((-10*sin(x)+10*sin(2*x))^2+(10*cos(x)-10*cos(2*x))^2)',a:'0',b:'2*pi',n:8,f:'1',u:'unidades',r:'80',s:'Solucionario: trapecio 78.969264 · Simpson 1/3 80.010767 · exacto 80'},
+{k:'25',t:'Ejercicio 25 · Energía potencial de un satélite',d:'ΔU = m·g₀ ∫₀ʰ R²/(R+y)² dy con m = 500 kg, R = 6 371 000 m, h = 800 000 m. Aquí x representa y.',m:'F',fx:'500*9.81*6371000^2/(6371000+x)^2',a:'0',b:'800000',n:8,f:'1',u:'J',r:'500*9.81*6371000*800000/(6371000+800000)',s:'Solucionario: trapecio 3.48662008×10⁹ J · Simpson 1/3 3.48623690×10⁹ J · exacto 3.486236787×10⁹ J'},
+{k:'26',t:'Ejercicio 26 · Superficie del lago',d:'A = ∫₄₀²⁶⁰ w(x) dx, x en millas. Mide las anchuras w(x) en el mapa cada 20 mi y escríbelas en y (12 valores).',m:'T',x:'40 60 80 100 120 140 160 180 200 220 240 260',y:'',f:'1',u:'mi²',r:'9940',s:'Solucionario: depende de las anchuras medidas; referencia 9 940 mi². Error % = 100·|A − 9940| / 9940'},
+{k:'27a',t:'Ejercicio 27 · Volumen del balón',d:'V = π ∫₀¹² r² dz con r = d/2 (datos de diámetro en pulgadas).',m:'T',x:'0 1 2 3 4 5 6 7 8 9 10 11 12',y:'0 2.6 3.2 4.8 5.6 6.0 6.2 6.0 5.6 4.8 3.3 2.6 0',g:'(y/2)^2',f:'pi',u:'in³',s:'Solucionario: trapecio 199.404740 in³ · Simpson 1/3 201.842092 in³'},
+{k:'27b',t:'Ejercicio 27 · Superficie con la fórmula del enunciado',d:'S = 2π ∫₀¹² r dz. Esta fórmula omite la pendiente de r, por lo que no es el área geométrica exacta.',m:'T',x:'0 1 2 3 4 5 6 7 8 9 10 11 12',y:'0 2.6 3.2 4.8 5.6 6.0 6.2 6.0 5.6 4.8 3.3 2.6 0',g:'y/2',f:'2*pi',u:'in²',s:'Solucionario: trapecio 159.278748 in² · Simpson 1/3 162.315620 in²'},
+{k:'p',t:'Personalizado (datos propios)',d:'Escribe tus datos o tu función.',m:'T',x:'',y:'',f:'1',u:''}];
+let mode='T',last=null;
+$('pre').innerHTML=P.map((p,i)=>`<option value="${i}">${p.t}</option>`).join('');
+function setMode(m){mode=m;$('tab').hidden=m!=='T';$('fun').hidden=m!=='F';$('mT').className=m==='T'?'':'s';$('mF').className=m==='F'?'':'s'}
+function load(){const p=P[$('pre').value];setMode(p.m);$('desc').textContent=p.d;
+ $('xs').value=p.x||'';$('ys').value=p.y||'';$('gy').value=p.g||'y';$('fx').value=p.fx||'';$('a').value=p.a||'';$('b').value=p.b||'';$('n').value=p.n||'';
+ $('fac').value=p.f;$('un').value=p.u;$('ref').value=p.r||'';$('msg').innerHTML='';
+ ['out','out2','out3'].forEach(i=>$(i).hidden=true);if(p.y||p.fx)run()}
+function W(m,n,h){const w=Array(n+1).fill(0);
+ const t=(s,e)=>{for(let i=s;i<e;i++){w[i]+=h/2;w[i+1]+=h/2}};
+ const a=(s,e)=>{for(let i=s;i<e;i+=2){w[i]+=h/3;w[i+1]+=4*h/3;w[i+2]+=h/3}};
+ const b=(s,e)=>{for(let i=s;i<e;i+=3){w[i]+=3*h/8;w[i+1]+=9*h/8;w[i+2]+=9*h/8;w[i+3]+=3*h/8}};
+ if(m==='T')t(0,n);if(m==='S13')a(0,n);if(m==='S38')b(0,n);
+ if(m==='MIX'){a(0,n-3);b(n-3,n)}if(m==='S13T'){a(0,n-1);t(n-1,n)}return w}
+function methods(n){return[
+ {k:'T',nm:'Trapecio compuesto',ok:true,c:'Cualquier n'},
+ {k:'S13',nm:'Simpson 1/3',ok:n%2===0,c:'n par'},
+ {k:'S38',nm:'Simpson 3/8',ok:n%3===0,c:'n múltiplo de 3'},
+ {k:'MIX',nm:'Simpson combinado (1/3 + 3/8)',ok:n%2===1&&n>=5,c:'n impar ≥ 5: 1/3 en n−3 y 3/8 en 3 subintervalos'},
+ {k:'S13T',nm:'Simpson 1/3 + trapecio en el último',ok:n%2===1&&n>=3,c:'n impar: 1/3 en n−1 y trapecio en el último'}]}
+function gather(){let xs,ys,n,h,curve=null;
+ if(mode==='T'){xs=list($('xs').value);ys=list($('ys').value);
+  if(!xs.length||!ys.length)throw Error('Ingresa los valores de x y de y.');
+  if(xs.length!==ys.length)throw Error('Las listas tienen distinta cantidad de datos: x tiene '+xs.length+' e y tiene '+ys.length+'.');
+  if(xs.length<2)throw Error('Se necesitan al menos 2 puntos.');
+  for(let i=1;i<xs.length;i++)if(!(xs[i]>xs[i-1]))throw Error('Los valores de x deben ser estrictamente crecientes (revisa la posición '+(i+1)+').');
+  n=xs.length-1;h=(xs[n]-xs[0])/n;
+  for(let i=1;i<=n;i++)if(M.abs(xs[i]-xs[i-1]-h)>1e-6*M.max(1,M.abs(h)))throw Error('El espaciamiento no es uniforme: h debe ser constante (diferencia en la posición '+(i+1)+').');
+  const g=mk($('gy').value||'y','y');ys=ys.map(g);if(ys.some(v=>!isFinite(v)))throw Error('La transformación de y produjo valores no numéricos.')}
+ else{const f=mk($('fx').value,'x');const a=num($('a').value,'a'),b=num($('b').value,'b');n=Number($('n').value);
+  if(!Number.isInteger(n)||n<1)throw Error('n debe ser un entero positivo.');
+  if(!(a<b))throw Error('Se requiere a < b.');h=(b-a)/n;xs=[];ys=[];
+  for(let i=0;i<=n;i++){const x=i===n?b:a+i*h;xs.push(x);const y=f(x);if(!isFinite(y))throw Error('f(x) no es finita en x = '+x+'.');ys.push(y)}
+  curve=Array.from({length:121},(_,i)=>{const x=a+(b-a)*i/120;return[x,f(x)]})}
+ return{xs,ys,n,h,curve}}
+function run(){const o=$('msg');o.innerHTML='';
+ try{const d=gather();const fac=num($('fac').value,'el factor');const un=$('un').value;
+  const ref=$('ref').value.trim()?num($('ref').value,'la referencia'):null;
+  const ms=methods(d.n);last={d,fac,ms};
+  const val=m=>fac*W(m,d.n,d.h).reduce((s,w,i)=>s+w*d.ys[i],0);
+  const T=val('T');
+  let h=`<tr><th>Método</th><th>Condición</th><th>Resultado ${un?'('+un+')':''}</th><th>Diferencia con el trapecio</th>${ref!==null?'<th>Error absoluto</th><th>Error %</th>':''}</tr>`;
+  ms.forEach(m=>{if(!m.ok){h+=`<tr><td class="na">${m.nm}</td><td class="na" colspan="${ref!==null?5:3}">No aplicable con n = ${d.n} (${m.c})</td></tr>`;return}
+   const v=val(m.k);h+=`<tr><td>${m.nm}</td><td>${m.c}</td><td class="big">${fmt(v)}</td><td>${m.k==='T'?'—':fmt(v-T)}</td>`;
+   if(ref!==null){const ea=M.abs(ref-v);h+=`<td>${fmt(ea)}</td><td>${ref!==0?(100*ea/M.abs(ref)).toFixed(4)+' %':'—'}</td>`}h+='</tr>'});
+  if(ref!==null)h+=`<tr><td>Valor de referencia</td><td></td><td>${fmt(ref)}</td><td></td><td></td><td></td></tr>`;
+  $('rt').innerHTML=h;$('par').textContent=`h = ${+d.h.toPrecision(10)} · n = ${d.n} subintervalos · ${d.n+1} nodos`;
+  const p=P[$('pre').value];const s=$('sol');s.hidden=!p.s||p.k==='p';s.textContent=p.s||'';
+  $('mw').innerHTML=ms.filter(m=>m.ok).map(m=>`<option value="${m.k}">${m.nm}</option>`).join('');
+  ['out','out2','out3'].forEach(i=>$(i).hidden=false);weights();chart(d)}
+ catch(e){o.innerHTML='<div class="err">'+e.message+'</div>';['out','out2','out3'].forEach(i=>$(i).hidden=true)}}
+function weights(){if(!last)return;const{d,fac}=last;const m=$('mw').value,w=W(m,d.n,d.h);
+ let s=0,h='<tr><th>i</th><th>xᵢ</th><th>f(xᵢ)</th><th>Peso wᵢ</th><th>wᵢ·f(xᵢ)</th></tr>';
+ d.xs.forEach((x,i)=>{s+=w[i]*d.ys[i];h+=`<tr><td>${i}</td><td>${+x.toPrecision(8)}</td><td>${+d.ys[i].toPrecision(8)}</td><td>${+w[i].toPrecision(8)}</td><td>${+(w[i]*d.ys[i]).toPrecision(8)}</td></tr>`});
+ h+=`<tr><td><b>Σ</b></td><td></td><td></td><td></td><td><b>${+s.toPrecision(10)}</b></td></tr>`+(fac!==1?`<tr><td>× factor</td><td></td><td></td><td></td><td><b>${fmt(s*fac)}</b></td></tr>`:'');
+ $('wt').innerHTML=h}
+function chart(d){const W_=600,H=260,p=34,x0=d.xs[0],x1=d.xs[d.n];const all=d.ys.concat(d.curve?d.curve.map(c=>c[1]):[]);
+ const lo=M.min(0,...all);let hi=M.max(0,...all);if(hi===lo)hi=lo+1;
+ const X=v=>p+(v-x0)/(x1-x0)*(W_-2*p),Y=v=>H-p-(v-lo)/(hi-lo)*(H-2*p);
+ const pl=d.xs.map((v,i)=>(i?'L':'M')+X(v).toFixed(1)+' '+Y(d.ys[i]).toFixed(1)).join('');
+ const cv=d.curve?'<path d="'+d.curve.map((c,i)=>(i?'L':'M')+X(c[0]).toFixed(1)+' '+Y(c[1]).toFixed(1)).join('')+'" fill="none" stroke="var(--tx)" stroke-width="1.5" stroke-dasharray="4 3"/>':'';
+ $('ch').innerHTML=`<svg viewBox="0 0 ${W_} ${H}" role="img" aria-label="Gráfico del área bajo la curva"><path d="${pl}L${X(x1)} ${Y(0)}L${X(x0)} ${Y(0)}Z" fill="var(--ac)" opacity=".22"/><line x1="${p}" x2="${W_-p}" y1="${Y(0)}" y2="${Y(0)}" stroke="var(--mu)"/>${cv}<path d="${pl}" fill="none" stroke="var(--ac)" stroke-width="2"/>${d.xs.map((v,i)=>`<circle cx="${X(v)}" cy="${Y(d.ys[i])}" r="3.5" fill="var(--ac)"/>`).join('')}<g fill="var(--mu)" font-size="12"><text x="${p}" y="${H-10}">${+x0.toPrecision(5)}</text><text x="${W_-p}" y="${H-10}" text-anchor="end">${+x1.toPrecision(5)}</text><text x="4" y="${Y(hi)+4}">${+hi.toPrecision(4)}</text></g></svg><p class="hint">Línea continua: nodos unidos (área del trapecio compuesto). Línea punteada: función exacta (modo f(x)).</p>`}
+function test(){setMode('F');$('pre').value=P.length-1;$('desc').textContent=P[P.length-1].d;$('fx').value='x^2';$('a').value='0';$('b').value='2';$('fac').value='1';$('un').value='';$('ref').value='8/3';$('xs').value=$('ys').value='';
+ let h='<div class="sol"><b>Prueba de validación: ∫₀² x² dx = 8/3 ≈ 2.666667</b><br>';
+ [4,8].forEach(n=>{$('n').value=n;const d=gather();const t=W('T',n,d.h).reduce((s,w,i)=>s+w*d.ys[i],0),s=W('S13',n,d.h).reduce((q,w,i)=>q+w*d.ys[i],0);
+  h+=`n = ${n}: trapecio ${t.toFixed(6)} (error ${M.abs(8/3-t).toFixed(6)}) · Simpson 1/3 ${s.toFixed(6)} (error ${M.abs(8/3-s).toExponential(2)})<br>`});
+ $('n').value=4;run();$('msg').innerHTML=h+'</div>'}
+$('pre').onchange=load;$('go').onclick=run;$('tst').onclick=test;$('mw').onchange=weights;
+$('mT').onclick=()=>setMode('T');$('mF').onclick=()=>setMode('F');
+load();
+</script>
+</body>
+</html>
